@@ -7,3 +7,8 @@
 #   ["Action", "Comedy", "Drama", "Horror"].each do |genre_name|
 #     MovieGenre.find_or_create_by!(name: genre_name)
 #   end
+
+yard = Yard.first
+truck = Truck.create!(plate: "ABC123")
+slot = yard.next_free_slot
+slot.create_container!(code: "CONT-1", truck: truck)

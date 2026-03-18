@@ -1,0 +1,32 @@
+<%= form_with(model: container) do |form| %>
+  <% if container.errors.any? %>
+    <div style="color: red">
+      <h2><%= pluralize(container.errors.count, "error") %> prohibited this container from being saved:</h2>
+
+      <ul>
+        <% container.errors.each do |error| %>
+          <li><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= form.label :code, style: "display: block" %>
+    <%= form.text_field :code %>
+  </div>
+
+  <div>
+    <%= form.label :slot_id, style: "display: block" %>
+    <%= form.text_field :slot_id %>
+  </div>
+
+  <div>
+    <%= form.label :truck_id, style: "display: block" %>
+    <%= form.text_field :truck_id %>
+  </div>
+
+  <div>
+    <%= form.submit %>
+  </div>
+<% end %>

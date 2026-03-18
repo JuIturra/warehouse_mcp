@@ -1,0 +1,48 @@
+<!-- app/views/yards/show.html.erb -->
+
+<h1><%= @yard.name %></h1>
+
+<div style="overflow: auto; max-height: 70vh; border: 1px solid #ccc;">
+  <table style="border-collapse: collapse;">
+    
+    <!-- Header columnas -->
+    <tr>
+      <th style="position: sticky; top: 0; left: 0; background: #eee; z-index: 3;"></th>
+      <% @yard.columns.times do |c| %>
+        <th style="position: sticky; top: 0; background: #eee; z-index: 2; padding: 5px;">
+          C<%= c %>
+        </th>
+      <% end %>
+    </tr>
+
+    <% @yard.rows.times do |r| %>
+      <tr>
+        <!-- Header fila -->
+        <th style="position: sticky; left: 0; background: #eee; z-index: 1; padding: 5px;">
+          F<%= r %>
+        </th>
+
+        <% @yard.columns.times do |c| %>
+          <% slot = @slots_map[[r, c]] %>
+
+          <td style="text-align:center; width:80px; height:80px; border: 1px solid #ccc;">
+            <% if slot.container %>
+              <div style="background: #ffcccc; height: 100%;">
+                📦 <br>
+                <%= slot.container.code %><br>
+                <small>(<%= r %>,<%= c %>)</small>
+              </div>
+            <% else %>
+              <div style="background: #ccffcc; height: 100%;">
+                vacío<br>
+                <small>(<%= r %>,<%= c %>)</small>
+              </div>
+            <% end %>
+          </td>
+
+        <% end %>
+      </tr>
+    <% end %>
+
+  </table>
+</div>

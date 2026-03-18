@@ -1,0 +1,45 @@
+<h1>Patios</h1>
+
+<%= link_to "Nuevo patio", new_yard_path %>
+
+<hr>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px;">
+  <% @yards.each do |yard| %>
+    <div style="border: 1px solid #ccc; padding: 15px; width: 250px; border-radius: 8px;">
+      
+      <h2><%= yard.name %></h2>
+
+      <p>
+        Tamaño: <strong><%= yard.rows %> x <%= yard.columns %></strong><br>
+        Total slots: <%= yard.total_slots %>
+      </p>
+
+      <% occupied = yard.occupied_slots %>
+      <% total = yard.total_slots %>
+      <% free = total - occupied %>
+      <% percent = yard.occupancy_percentage %>
+
+      <p>
+        Ocupados: <%= occupied %><br>
+        Libres: <%= free %>
+      </p>
+
+      <!-- Barra de ocupación -->
+      <div style="background: #eee; border-radius: 5px; overflow: hidden; height: 20px;">
+        <div style="
+          width: <%= percent %>%;
+          background: <%= percent > 80 ? '#ff6666' : '#66cc66' %>;
+          height: 100%;
+        ">
+        </div>
+      </div>
+
+      <p><%= percent %>% ocupado</p>
+
+      <%= link_to "Ver patio", yard_path(yard) %>
+    </div>
+  <% end %>
+</div>
+
+<br>
