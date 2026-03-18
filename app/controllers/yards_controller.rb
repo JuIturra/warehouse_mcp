@@ -59,6 +59,38 @@ class YardsController < ApplicationController
     end
   end
 
+  def process_arrival
+    @yard = Yard.find(params[:id])
+
+    plate = params[:plate].to_s.strip
+    container_codes = params[:containers].to_s.split(",").map(&:strip).reject(&:blank?)
+
+    if plate.blank? || container_codes.empty?
+      redirect_to @yard, alert: "Debe ingresar patente y al menos un contenedor"
+      return
+    end
+
+    truck = Truck.find_or_create_by!(plate: plate)
+
+    service = ProcessTruckArrival.new(
+      yard: @yard,
+      truck: truck,
+      container_codes: container_codes
+    )
+
+    results = service.call
+
+    redirect_to @yard, notice: results.map { |r|
+      if r[:status] == :stored
+        "#{r[:code]} → (#{r[:slot].join(",")})"
+      else
+        "#{r[:code]} → ERROR: #{r[:reason]}"
+      end
+    }.join(" | ")
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to @yard, alert: e.record.errors.full_messages.to_sentence
+  end
+
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_yard

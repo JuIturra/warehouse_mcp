@@ -45,4 +45,49 @@ class YardsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to yards_url
   end
+
+  test "process_arrival reuses existing truck plate" do
+    yard = Yard.create!(name: "Process Yard", rows: 1, columns: 2)
+
+    assert_difference("Truck.count", 1) do
+      assert_difference("Container.count", 1) do
+        post process_arrival_yard_url(yard), params: {
+          plate: "KMLP56",
+          containers: "CXX45"
+        }
+      end
+    end
+
+    assert_redirected_to yard_url(yard)
+
+    assert_no_difference("Truck.count") do
+      assert_difference("Container.count", 1) do
+        post process_arrival_yard_url(yard), params: {
+          plate: "KMLP56",
+          containers: "CPP12"
+        }
+      end
+    end
+
+    assert_redirected_to yard_url(yard)
+  end
+
+  test "process_arrival does not crash when container code already exists" do
+    yard = Yard.create!(name: "Duplicate Code Yard", rows: 1, columns: 2)
+
+    post process_arrival_yard_url(yard), params: {
+      plate: "KMLP57",
+      containers: "CXX45"
+    }
+    assert_redirected_to yard_url(yard)
+
+    assert_no_difference("Container.count") do
+      post process_arrival_yard_url(yard), params: {
+        plate: "KMLP57",
+        containers: "CXX45"
+      }
+    end
+
+    assert_redirected_to yard_url(yard)
+  end
 end

@@ -15,7 +15,11 @@ class Yard < ApplicationRecord
   end
 
   def next_free_slot
-    slots.left_joins(:container).where(containers: { id: nil }).first
+    slots
+      .left_joins(:container)
+      .where(containers: { id: nil })
+      .lock("FOR UPDATE OF slots")
+      .first
   end
 
   def total_slots

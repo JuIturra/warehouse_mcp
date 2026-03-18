@@ -2,6 +2,24 @@
 
 <h1><%= @yard.name %></h1>
 
+<h3>Simular llegada de camión</h3>
+
+<%= form_with url: process_arrival_yard_path(@yard), method: :post do %>
+  <div>
+    Patente camión:
+    <%= text_field_tag :plate %>
+  </div>
+
+  <div>
+    Contenedores (separados por coma):
+    <%= text_field_tag :containers %>
+  </div>
+
+  <%= submit_tag "Procesar llegada" %>
+<% end %>
+
+<h3>Estado del patio</h3>
+
 <div style="overflow: auto; max-height: 70vh; border: 1px solid #ccc;">
   <table style="border-collapse: collapse;">
     
