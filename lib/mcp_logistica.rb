@@ -5,13 +5,8 @@ require "json"
 # Definicion de herramientas para que la IA sepa que puede preguntar
 TOOLS = [
   {
-    name: "listar_patios",
-    description: "Retorna todos los patios (Yards) con dimensiones, capacidad y disponibilidad.",
-    inputSchema: { type: "object", properties: {} }
-  },
-  {
     name: "resumen_patios",
-    description: "Entrega capacidad total, ocupados, libres y porcentaje de ocupacion por cada patio.",
+    description: "Lista todos los patios con su capacidad total, slots ocupados, libres y porcentaje de ocupacion.",
     inputSchema: { type: "object", properties: {} }
   },
   {
@@ -56,13 +51,13 @@ TOOLS = [
   },
   {
     name: "retirar_contenedor",
-    description: "Retira un contenedor del patio por nombre (codigo) y libera su slot.",
+    description: "Retira un contenedor del patio por su codigo y libera su slot.",
     inputSchema: {
       type: "object",
       properties: {
-        nombre: { type: "string" }
+        codigo: { type: "string" }
       },
-      required: ["nombre"]
+      required: ["codigo"]
     }
   }
 ]
@@ -135,10 +130,6 @@ $stdin.each_line do |line|
       args = request.dig("params", "arguments") || {}
 
       result_data = case name
-      when "listar_patios"
-        patios = Yard.order(:id)
-        { patios: patios.map { |yard| format_yard(yard) } }
-
       when "resumen_patios"
         patios = Yard.order(:id)
         {
@@ -149,6 +140,7 @@ $stdin.each_line do |line|
       when "estado_ocupacion_yard"
         yard_id = args["yard_id"]
         raise ArgumentError, "Falta argumento obligatorio: yard_id" if yard_id.nil?
+        yard_id = parse_integer(yard_id, "yard_id")
 
         y = Yard.find(yard_id)
         total = y.total_slots
@@ -167,27 +159,26 @@ $stdin.each_line do |line|
         raise ArgumentError, "Falta argumento obligatorio: codigo" if code.empty?
 
         c = Container.includes(slot: :yard, truck: []).find_by(code: code)
-        if c
-          slot = c.slot
-          yard = slot&.yard
+        raise ActiveRecord::RecordNotFound, "Contenedor '#{code}' no encontrado" unless c
 
-          {
-            codigo: c.code,
-            patio: yard&.name,
-            fila: slot&.row,
-            columna: slot&.column,
-            camion_patente: c.truck&.plate
-          }
-        else
-          { error: "Contenedor no encontrado" }
-        end
+        slot = c.slot
+        yard = slot&.yard
+        {
+          codigo: c.code,
+          patio: yard&.name,
+          fila: slot&.row,
+          columna: slot&.column,
+          camion_patente: c.truck&.plate
+        }
 
       when "contenedores_por_camion"
         plate = normalized_string(args["patente"])
         raise ArgumentError, "Falta argumento obligatorio: patente" if plate.empty?
 
         t = Truck.includes(:containers).find_by(plate: plate)
-        t ? { patente: t.plate, contenedores: t.containers.pluck(:code) } : { error: "Camion no encontrado" }
+        raise ActiveRecord::RecordNotFound, "Camion con patente '#{plate}' no encontrado" unless t
+
+        { patente: t.plate, contenedores: t.containers.pluck(:code) }
 
       when "registrar_contenedor"
         code = normalized_string(args["codigo"])
@@ -222,33 +213,28 @@ $stdin.each_line do |line|
         }
 
       when "retirar_contenedor"
-        # Soporta ambos nombres de argumento: `nombre` (preferido) y `codigo`.
-        code = normalized_string(args["nombre"])
-        code = normalized_string(args["codigo"]) if code.empty?
-        raise ArgumentError, "Falta argumento obligatorio: nombre" if code.empty?
+        code = normalized_string(args["codigo"])
+        raise ArgumentError, "Falta argumento obligatorio: codigo" if code.empty?
 
         container = Container.includes(slot: :yard, truck: []).find_by(code: code)
-        return_payload = { codigo: code }
+        raise ActiveRecord::RecordNotFound, "Contenedor '#{code}' no encontrado" unless container
 
-        if container.nil?
-          return_payload.merge(status: "not_found", error: "Contenedor no encontrado")
+        slot = container.slot
+        yard = slot&.yard
+
+        if slot.nil?
+          { codigo: code, status: "already_in_transit", detalle: "El contenedor ya estaba fuera del patio" }
         else
-          slot = container.slot
-          yard = slot&.yard
-
-          if slot.nil?
-            return_payload.merge(status: "already_in_transit", detalle: "El contenedor ya estaba fuera del patio")
-          else
-            container.destroy!
-            return_payload.merge(
-              status: "retirado",
-              patio_origen_id: yard&.id,
-              patio_origen_nombre: yard&.name,
-              fila_origen: slot.row,
-              columna_origen: slot.column,
-              camion_patente: container.truck&.plate
-            )
-          end
+          container.destroy!
+          {
+            codigo: code,
+            status: "retirado",
+            patio_origen_id: yard&.id,
+            patio_origen_nombre: yard&.name,
+            fila_origen: slot.row,
+            columna_origen: slot.column,
+            camion_patente: container.truck&.plate
+          }
         end
 
       else
