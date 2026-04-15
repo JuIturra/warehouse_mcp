@@ -67,4 +67,4 @@ group :test do
   gem "selenium-webdriver"
 end
 
-gem 'mcp-ruby'
+gem 'fast-mcp'
