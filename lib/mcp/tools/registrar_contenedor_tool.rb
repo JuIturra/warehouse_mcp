@@ -2,6 +2,18 @@ class RegistrarContenedorTool < FastMcp::Tool
   tool_name "registrar_contenedor"
   description "Registra un contenedor en un patio y lo asigna a un slot libre. Permite asociar patente de camion opcional."
 
+  # ── Autorizacion por tool ────────────────────────────────────────────────────
+  # Si MCP_ADMIN_TOKEN esta definido, exige el header X-Admin-Token en el request.
+  # Esto permite tener un token de solo lectura (MCP_AUTH_TOKEN) y uno de escritura
+  # (MCP_ADMIN_TOKEN) de forma independiente.
+  # En modo stdio (sin MCP_ADMIN_TOKEN) el bloque siempre permite la ejecucion.
+  authorize do
+    admin_token = ENV["MCP_ADMIN_TOKEN"]
+    next true if admin_token.nil? || admin_token.empty?
+
+    headers["X-Admin-Token"] == admin_token
+  end
+
   arguments do
     required(:codigo).filled(:string).description("Codigo del contenedor")
     required(:yard_id).filled(:integer).description("ID del patio donde almacenar")

@@ -2,6 +2,13 @@ class RetirarContenedorTool < FastMcp::Tool
   tool_name "retirar_contenedor"
   description "Retira un contenedor del patio por su codigo y libera su slot."
 
+  authorize do
+    admin_token = ENV["MCP_ADMIN_TOKEN"]
+    next true if admin_token.nil? || admin_token.empty?
+
+    headers["X-Admin-Token"] == admin_token
+  end
+
   arguments do
     required(:codigo).filled(:string).description("Codigo del contenedor")
   end
